@@ -1,32 +1,32 @@
 import React, { useState, useEffect } from 'react';
+import Sidebar from '@/components/ui/sidebar'; // Import a nova Sidebar
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line, Area, AreaChart
 } from 'recharts';
 import { 
-  Search, TrendingUp, TrendingDown, Star, MessageSquare, 
-  AlertTriangle, CheckCircle, Clock, Users, Smartphone,
-  BarChart3, PieChart as PieChartIcon, Activity, Zap
+  Search, TrendingUp, Star, MessageSquare,
+  AlertTriangle, Smartphone,
+  BarChart3, PieChart as PieChartIcon, Activity
 } from 'lucide-react';
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+// const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8']; // Pode ser removido ou movido se não for mais usado globalmente
 
 function Dashboard() {
   const [appId, setAppId] = useState('com.itau.investimentos');
   const [loading, setLoading] = useState(false);
   const [dashboardData, setDashboardData] = useState(null);
-  const [analysisData, setAnalysisData] = useState(null);
+  // const [analysisData, setAnalysisData] = useState(null); // Removido se não estiver sendo usado
+  const [activeView, setActiveView] = useState('overview'); // Estado para controlar a view ativa
 
   const fetchDashboardData = async (id) => {
     setLoading(true);
     try {
-      // Simular dados para demonstração
       const mockData = {
         app_info: {
           title: 'Íon Itaú: investir com taxa 0',
@@ -70,7 +70,6 @@ function Dashboard() {
           }
         ]
       };
-      
       setDashboardData(mockData);
     } catch (error) {
       console.error('Erro ao buscar dados:', error);
@@ -105,27 +104,298 @@ function Dashboard() {
     reviews: dashboardData.trends.review_volume[index]
   })) : [];
 
+  const renderContent = () => {
+    if (!dashboardData) return null;
+
+    switch (activeView) {
+      case 'overview':
+        return (
+          <div className="space-y-6">
+            {/* App Info Cards - KPIs */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <Card className="bg-white shadow-lg rounded-xl border border-slate-200">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-slate-600">Avaliação Média</CardTitle>
+                  <Star className="h-5 w-5 text-amber-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-slate-800">{dashboardData.app_info.score.toFixed(2)}</div>
+                  <p className="text-xs text-slate-500">
+                    {dashboardData.metrics.total_reviews} avaliações
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white shadow-lg rounded-xl border border-slate-200">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-slate-600">Sentimento Positivo</CardTitle>
+                  <TrendingUp className="h-5 w-5 text-green-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-slate-800">{dashboardData.metrics.sentiment_distribution.positivo}%</div>
+                  <p className="text-xs text-slate-500">
+                    Avaliações positivas
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white shadow-lg rounded-xl border border-slate-200">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-slate-600">Issues Críticas</CardTitle>
+                  <AlertTriangle className="h-5 w-5 text-red-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-slate-800">{dashboardData.metrics.severity_distribution.Alta}</div>
+                  <p className="text-xs text-slate-500">
+                    Problemas de alta prioridade
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white shadow-lg rounded-xl border border-slate-200">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-slate-600">Versão Atual</CardTitle>
+                  <Smartphone className="h-5 w-5 text-sky-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-slate-800">{dashboardData.app_info.version}</div>
+                  <p className="text-xs text-slate-500">
+                    {dashboardData.app_info.installs} instalações
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="shadow-lg rounded-xl border border-slate-200">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-slate-700">
+                    <PieChartIcon className="w-5 h-5 text-blue-500" />
+                    Distribuição de Sentimentos
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={sentimentData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        outerRadius={100}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {sentimentData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-lg rounded-xl border border-slate-200">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-slate-700">
+                    <BarChart3 className="w-5 h-5 text-blue-500" />
+                    Severidade dos Problemas
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={severityData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="value" fill="#8884d8">
+                        {severityData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card className="shadow-lg rounded-xl border border-slate-200">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-slate-700">
+                  <MessageSquare className="w-5 h-5 text-blue-500" />
+                  Issues Recentes
+                </CardTitle>
+                <CardDescription className="text-slate-500">
+                  Problemas identificados automaticamente pela IA
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {dashboardData.recent_tasks.map((task) => (
+                    <div key={task.id} className="flex items-start space-x-4 p-4 border border-slate-200 rounded-lg bg-slate-50/50 hover:bg-slate-100/70 transition-colors">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge
+                            variant={task.severity === 'Alta' ? 'destructive' : task.severity === 'Média' ? 'default' : 'secondary'}
+                            className={task.severity === 'Média' ? 'bg-amber-500 hover:bg-amber-600' : ''}
+                          >
+                            {task.severity}
+                          </Badge>
+                          <span className="text-sm text-slate-500">por {task.user}</span>
+                        </div>
+                        <p className="text-sm text-slate-700 mb-1">{task.review_text}</p>
+                        <p className="text-xs text-slate-500">{task.title}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        );
+      case 'sentiment':
+        return (
+          <Card className="shadow-lg rounded-xl border border-slate-200">
+            <CardHeader>
+              <CardTitle className="text-slate-700">Análise Detalhada de Sentimentos</CardTitle>
+              <CardDescription className="text-slate-500">
+                Análise baseada em IA das avaliações dos usuários
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="text-center p-6 bg-green-50 rounded-lg border border-green-200">
+                    <div className="text-3xl font-bold text-green-600">
+                      {dashboardData.metrics.sentiment_distribution.positivo}%
+                    </div>
+                    <div className="text-sm text-green-700 mt-1">Positivo</div>
+                    <Progress value={dashboardData.metrics.sentiment_distribution.positivo} className="mt-3 h-2 [&>div]:bg-green-500" />
+                  </div>
+                  <div className="text-center p-6 bg-yellow-50 rounded-lg border border-yellow-200">
+                    <div className="text-3xl font-bold text-yellow-600">
+                      {dashboardData.metrics.sentiment_distribution.neutro}%
+                    </div>
+                    <div className="text-sm text-yellow-700 mt-1">Neutro</div>
+                    <Progress value={dashboardData.metrics.sentiment_distribution.neutro} className="mt-3 h-2 [&>div]:bg-yellow-500" />
+                  </div>
+                  <div className="text-center p-6 bg-red-50 rounded-lg border border-red-200">
+                    <div className="text-3xl font-bold text-red-600">
+                      {dashboardData.metrics.sentiment_distribution.negativo}%
+                    </div>
+                    <div className="text-sm text-red-700 mt-1">Negativo</div>
+                    <Progress value={dashboardData.metrics.sentiment_distribution.negativo} className="mt-3 h-2 [&>div]:bg-red-500" />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      case 'issues':
+        return (
+          <Card className="shadow-lg rounded-xl border border-slate-200">
+            <CardHeader>
+              <CardTitle className="text-slate-700">Gestão de Issues</CardTitle>
+              <CardDescription className="text-slate-500">
+                Backlog automático gerado pela IA baseado em feedback negativo
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {dashboardData.recent_tasks.map((task) => (
+                  <div key={task.id} className="border border-slate-200 rounded-lg p-4 bg-slate-50/50 hover:bg-slate-100/70 transition-colors">
+                    <div className="flex items-center justify-between mb-2">
+                      <Badge
+                        variant={task.severity === 'Alta' ? 'destructive' : task.severity === 'Média' ? 'default' : 'secondary'}
+                        className={task.severity === 'Média' ? 'bg-amber-500 hover:bg-amber-600' : ''}
+                      >
+                        {task.severity}
+                      </Badge>
+                      <Button size="sm" variant="outline" className="border-blue-500 text-blue-500 hover:bg-blue-50 hover:text-blue-600">
+                        Criar Issue no GitHub
+                      </Button>
+                    </div>
+                    <h4 className="font-semibold text-slate-700 mb-1">{task.title}</h4>
+                    <p className="text-sm text-slate-600 mb-1">
+                      <strong>Usuário:</strong> {task.user}
+                    </p>
+                    <p className="text-sm text-slate-700">
+                      <strong>Feedback:</strong> "{task.review_text}"
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        );
+      case 'trends':
+        return (
+          <Card className="shadow-lg rounded-xl border border-slate-200">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-slate-700">
+                <Activity className="w-5 h-5 text-blue-500" />
+                Tendências de Avaliação
+              </CardTitle>
+              <CardDescription className="text-slate-500">
+                Evolução das avaliações ao longo do tempo
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={400}>
+                <AreaChart data={trendData}>
+                  <defs>
+                    <linearGradient id="colorRating" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.7}/>
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="month" stroke="#64748b" />
+                  <YAxis stroke="#64748b" />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: 'white', borderRadius: '0.5rem', borderColor: '#e2e8f0' }}
+                    labelStyle={{ color: '#1e293b', fontWeight: 'bold' }}
+                  />
+                  <Area type="monotone" dataKey="rating" stroke="#3b82f6" fillOpacity={1} fill="url(#colorRating)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        );
+      default:
+        return <div>Selecione uma visão</div>;
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div className="flex min-h-screen bg-slate-50">
+      <Sidebar activeView={activeView} setActiveView={setActiveView} />
+      <main className="flex-1 p-6 lg:p-8 space-y-6 overflow-y-auto">
+        {/* Header da Área de Conteúdo */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6 border-b border-slate-200">
           <div>
-            <h1 className="text-4xl font-bold text-slate-900 mb-2">
-              App Analyzer Dashboard
+            <h1 className="text-3xl font-bold text-slate-800">
+              {activeView.charAt(0).toUpperCase() + activeView.slice(1).replace('-', ' ')}
             </h1>
-            <p className="text-slate-600">
-              Análise inteligente de aplicativos com IA para insights executivos
+            <p className="text-slate-500 text-sm">
+              {activeView === 'overview' ? 'Visão geral e métricas chave do aplicativo.' :
+               activeView === 'sentiment' ? 'Análise detalhada dos sentimentos dos usuários.' :
+               activeView === 'issues' ? 'Backlog de problemas e feedback para ação.' :
+               'Evolução das métricas e performance ao longo do tempo.'
+              }
             </p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-3 items-center">
             <Input
-              placeholder="ID do aplicativo (ex: com.itau.investimentos)"
+              placeholder="ID do app (ex: com.itau.investimentos)"
               value={appId}
               onChange={(e) => setAppId(e.target.value)}
-              className="w-80"
+              className="w-72 text-sm border-slate-300 focus:border-blue-500 focus:ring-blue-500"
             />
-            <Button onClick={handleAnalyze} disabled={loading} className="bg-blue-600 hover:bg-blue-700">
+            <Button onClick={handleAnalyze} disabled={loading} className="bg-blue-600 hover:bg-blue-700 text-white text-sm">
               {loading ? (
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -141,260 +411,9 @@ function Dashboard() {
           </div>
         </div>
 
-        {dashboardData && (
-          <>
-            {/* App Info Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Avaliação Média</CardTitle>
-                  <Star className="h-4 w-4" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{dashboardData.app_info.score.toFixed(2)}</div>
-                  <p className="text-xs opacity-80">
-                    {dashboardData.metrics.total_reviews} avaliações
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Sentimento Positivo</CardTitle>
-                  <TrendingUp className="h-4 w-4" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{dashboardData.metrics.sentiment_distribution.positivo}%</div>
-                  <p className="text-xs opacity-80">
-                    Avaliações positivas
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gradient-to-r from-orange-500 to-orange-600 text-white">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Issues Críticas</CardTitle>
-                  <AlertTriangle className="h-4 w-4" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{dashboardData.metrics.severity_distribution.Alta}</div>
-                  <p className="text-xs opacity-80">
-                    Problemas de alta prioridade
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Versão Atual</CardTitle>
-                  <Smartphone className="h-4 w-4" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{dashboardData.app_info.version}</div>
-                  <p className="text-xs opacity-80">
-                    {dashboardData.app_info.installs} instalações
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Main Dashboard */}
-            <Tabs defaultValue="overview" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-                <TabsTrigger value="sentiment">Sentimentos</TabsTrigger>
-                <TabsTrigger value="issues">Issues</TabsTrigger>
-                <TabsTrigger value="trends">Tendências</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="overview" className="space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <PieChartIcon className="w-5 h-5" />
-                        Distribuição de Sentimentos
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <ResponsiveContainer width="100%" height={300}>
-                        <PieChart>
-                          <Pie
-                            data={sentimentData}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={false}
-                            label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                            outerRadius={80}
-                            fill="#8884d8"
-                            dataKey="value"
-                          >
-                            {sentimentData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} />
-                            ))}
-                          </Pie>
-                          <Tooltip />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <BarChart3 className="w-5 h-5" />
-                        Severidade dos Problemas
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={severityData}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="name" />
-                          <YAxis />
-                          <Tooltip />
-                          <Bar dataKey="value" fill="#8884d8">
-                            {severityData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} />
-                            ))}
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <MessageSquare className="w-5 h-5" />
-                      Issues Recentes
-                    </CardTitle>
-                    <CardDescription>
-                      Problemas identificados automaticamente pela IA
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {dashboardData.recent_tasks.map((task) => (
-                        <div key={task.id} className="flex items-start space-x-4 p-4 border rounded-lg">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Badge variant={task.severity === 'Alta' ? 'destructive' : task.severity === 'Média' ? 'default' : 'secondary'}>
-                                {task.severity}
-                              </Badge>
-                              <span className="text-sm text-slate-600">por {task.user}</span>
-                            </div>
-                            <p className="text-sm text-slate-800 mb-2">{task.review_text}</p>
-                            <p className="text-xs text-slate-500">{task.title}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="sentiment" className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Análise Detalhada de Sentimentos</CardTitle>
-                    <CardDescription>
-                      Análise baseada em IA das avaliações dos usuários
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-6">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="text-center p-4 bg-green-50 rounded-lg">
-                          <div className="text-2xl font-bold text-green-600">
-                            {dashboardData.metrics.sentiment_distribution.positivo}%
-                          </div>
-                          <div className="text-sm text-green-700">Positivo</div>
-                          <Progress value={dashboardData.metrics.sentiment_distribution.positivo} className="mt-2" />
-                        </div>
-                        <div className="text-center p-4 bg-yellow-50 rounded-lg">
-                          <div className="text-2xl font-bold text-yellow-600">
-                            {dashboardData.metrics.sentiment_distribution.neutro}%
-                          </div>
-                          <div className="text-sm text-yellow-700">Neutro</div>
-                          <Progress value={dashboardData.metrics.sentiment_distribution.neutro} className="mt-2" />
-                        </div>
-                        <div className="text-center p-4 bg-red-50 rounded-lg">
-                          <div className="text-2xl font-bold text-red-600">
-                            {dashboardData.metrics.sentiment_distribution.negativo}%
-                          </div>
-                          <div className="text-sm text-red-700">Negativo</div>
-                          <Progress value={dashboardData.metrics.sentiment_distribution.negativo} className="mt-2" />
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="issues" className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Gestão de Issues</CardTitle>
-                    <CardDescription>
-                      Backlog automático gerado pela IA baseado em feedback negativo
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {dashboardData.recent_tasks.map((task) => (
-                        <div key={task.id} className="border rounded-lg p-4">
-                          <div className="flex items-center justify-between mb-2">
-                            <Badge variant={task.severity === 'Alta' ? 'destructive' : task.severity === 'Média' ? 'default' : 'secondary'}>
-                              {task.severity}
-                            </Badge>
-                            <Button size="sm" variant="outline">
-                              Criar Issue no GitHub
-                            </Button>
-                          </div>
-                          <h4 className="font-medium mb-2">{task.title}</h4>
-                          <p className="text-sm text-slate-600 mb-2">
-                            <strong>Usuário:</strong> {task.user}
-                          </p>
-                          <p className="text-sm text-slate-800">
-                            <strong>Feedback:</strong> "{task.review_text}"
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="trends" className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Activity className="w-5 h-5" />
-                      Tendências de Avaliação
-                    </CardTitle>
-                    <CardDescription>
-                      Evolução das avaliações ao longo do tempo
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ResponsiveContainer width="100%" height={400}>
-                      <AreaChart data={trendData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="month" />
-                        <YAxis />
-                        <Tooltip />
-                        <Area type="monotone" dataKey="rating" stroke="#8884d8" fill="#8884d8" fillOpacity={0.6} />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
-          </>
-        )}
-      </div>
+        {loading && <div className="flex justify-center items-center h-64"><div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" /> <p className="ml-3 text-slate-600">Carregando dados...</p></div>}
+        {!loading && renderContent()}
+      </main>
     </div>
   );
 }
