@@ -3,6 +3,7 @@
 Um sistema completo de análise de aplicativos móveis com IA para insights executivos e geração automática de backlog.
 
 ## 🚀 Funcionalidades
+##
 
 ### Dashboard Executivo
 - **Visão Geral Completa**: Métricas principais, avaliação média, sentimentos e issues críticas
